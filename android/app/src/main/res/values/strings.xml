@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AI Teacher</string>
+    <string name="title_activity_main">AI Teacher</string>
+    <string name="package_name">com.mithilaacademy.spaai</string>
+    <string name="custom_url_scheme">com.mithilaacademy.spaai</string>
+</resources>

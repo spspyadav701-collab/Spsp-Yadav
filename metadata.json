@@ -1,0 +1,6 @@
+{
+  "name": "Mithila Academy - AI Teacher Live",
+  "description": "Real-time, voice-to-voice AI Teacher for Mithila Academy with audio-reactive live avatar, Gemini Live API streaming in Hindi, and web tools.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
