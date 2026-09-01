@@ -1,0 +1,1053 @@
+Spark
+
+Gemini
+
+Gemini 3.7 FlashRan for 173s
+
+summarize_autoAction historychevron_right
+
+Your application has been restored to its working state with all existing screens, features, images, and configurations intact.
+
+Diagnosis & Corrections Made:
+
+Restored gradle.properties: Reinstated the Android Gradle compiler and JVM environment settings (which were accidentally replaced with a YAML workflow file).
+
+Cleaned Workspace Configuration: Restored /assets/.aistudio/.gitignore, cleaned up misplaced workflow files at the root level, and formatted the gradlew script so that GitHub Actions and local builds work properly.
+
+Verified Application & Assets: Confirmed that all existing screens (Home, AI Voice Teacher, Live Class Room, Videos, Notes, Tests, Faculty, Settings, Downloads), layouts, drawables, Room database, and Gemini service integrations remain unchanged.
+
+Generated Signed APK Artifacts:
+
+Signed Release APK: app/build/outputs/apk/release/app-release.apk (~23 MB)
+
+Signed Debug APK: app/build/outputs/apk/debug/app-debug.apk (~30 MB)
+
+Both APKs are available directly in your project's app/build/outputs/apk/ directory.
+
+flagCheckpoint
+
+Google AI Studio Prompt to Build and Publish the Debug APK
+Prompt Start Here:
+—----------------------
+Prepare this completed Google AI Studio Android app for automatic debug APK building and
+GitHub Release publishing with GitHub Actions.
+Before creating anything, confirm that:
+gradle/libs.versions.toml
+contains exactly:
+agp = "9.1.1"
+If the AGP version is not exactly 9.1.1:
+● Stop immediately.
+● Report the detected AGP value.
+● Do not create the workflow.
+● Do not modify any file.
+If the AGP version is exactly 9.1.1, create only:
+.github/workflows/build-apk.yml
+Do not create, edit, delete, rename, format, upgrade, or replace any other repository file.
+
+Do not modify the Android app, source code, design, features, package name, application ID,
+manifest, resources, dependencies, Gradle project files, signing configuration, or project
+settings.
+The workflow must build the debug APK, preserve it as a normal GitHub Actions artifact, and
+publish the same APK directly under GitHub Releases for easy downloading on a phone.
+Workflow triggers
+Create a GitHub Actions workflow that:
+● Runs automatically on every push to the main branch.
+● Also supports workflow_dispatch.
+● Does not run on pull requests.
+● Uses ubuntu-latest.
+● Checks out the complete repository.
+● Runs all Gradle commands from the repository root.
+Workflow permissions
+Add only the permission required to create a GitHub Release:
+permissions:
+contents: write
+Do not request unnecessary permissions.
+Do not use a personal access token, repository secret, external API key, deployment key, or
+custom credential.
+Use only the workflow's built-in GitHub token for release creation:
+${{ github.token }}
+Java setup
+Set up Temurin Java 17 using actions/setup-java.
+Java must be configured before Gradle is configured or any Gradle command is executed.
+Add a step named:
+Verify Java environment
+
+That step must:
+● Run java -version.
+● Print JAVA_HOME.
+● Detect the active Java major version.
+● Confirm that the active Java major version is 17 or newer.
+● Fail clearly if Java is lower than 17.
+● Fail clearly if the Java version cannot be detected.
+Gradle setup
+Set up exactly Gradle 9.3.1 using gradle/actions/setup-gradle.
+Do not use:
+● Gradle 8.13
+● The repository Gradle wrapper
+● latest
+● current
+● release-candidate
+● nightly
+● Any Gradle version other than exactly 9.3.1
+Run all Gradle commands from the repository root.
+Temporary debug keystore
+Before building, add a step named:
+Create temporary debug keystore
+That step must:
+● Check whether ./debug.keystore already exists.
+● Generate it only when it is missing.
+● Use keytool from the configured Java 17 installation.
+● Use exactly:
+○ Keystore password: android
+○ Key alias: androiddebugkey
+○ Key password: android
+○ Distinguished name: CN=Android Debug,O=Android,C=US
+○ Algorithm: RSA
+○ Key size: 2048
+○ Validity: 10000 days
+
+● Confirm that ./debug.keystore exists after generation.
+● Fail clearly if the keystore cannot be created.
+● Never commit the keystore.
+● Never cache the keystore.
+● Never print the keystore.
+● Never expose the keystore.
+● Never preserve the keystore after the workflow runner is removed.
+● Never upload the keystore as an artifact or release asset.
+Build the debug APK
+Build the debug APK using exactly:
+gradle :app:assembleDebug --stacktrace --no-daemon
+Do not replace this command with:
+● ./gradlew
+● gradlew
+● assembleRelease
+● bundleRelease
+● assemble
+● build
+● Any other Gradle command
+Verify the APK
+After the build, verify that this exact file exists:
+app/build/outputs/apk/debug/app-debug.apk
+If the exact file is missing:
+● Search only inside app/build/outputs/apk.
+● Print the APK paths discovered inside that directory.
+● Do not search the entire repository.
+● Do not select a release APK.
+● Do not select an Android test APK.
+● Do not select an APK from another module.
+● Do not upload or release an unrelated APK.
+● Fail clearly if the expected debug APK does not exist.
+Confirm that the selected APK:
+
+● Exists.
+● Is a regular file.
+● Is not empty.
+● Has the .apk extension.
+● Is exactly app/build/outputs/apk/debug/app-debug.apk.
+Upload the GitHub Actions artifact
+After APK verification, add a step named:
+Upload debug APK artifact
+Use actions/upload-artifact.
+Upload only:
+app/build/outputs/apk/debug/app-debug.apk
+Name the artifact exactly:
+app-debug-apk
+Configure artifact upload to fail when the APK is missing.
+Do not upload a directory containing unrelated files.
+Do not upload:
+● debug.keystore
+● Credentials
+● Source code
+● Gradle caches
+● Build caches
+● Configuration files
+● Secrets
+● Logs containing sensitive information
+● google-services.json
+● Firebase configuration files
+● Signing files
+The normal GitHub Actions artifact must remain available even after GitHub Release publishing
+is added.
+Prepare the APK release asset
+
+After the Actions artifact has been uploaded successfully, add a step named:
+Prepare APK release asset
+That step must:
+● Create a temporary directory inside the GitHub Actions runner for the release asset.
+● Do not create or commit this directory in the repository.
+● Copy only the verified APK into that temporary directory.
+● Give the copied APK a clear filename based on the repository name and workflow run
+number.
+● Sanitize the repository name before using it in the filename.
+● Use only safe filename characters.
+● Preserve the .apk extension.
+● Do not compress the APK.
+● Do not place the APK inside a ZIP file.
+● Do not rename any file inside the repository.
+● Do not modify the original APK.
+● Export the final release-asset path through GITHUB_OUTPUT for the release step.
+Use a release filename in this general format:
+repository-name-debug-build-run-number.apk
+For example:
+my-android-app-debug-build-12.apk
+Do not hard-code a specific app name or repository name.
+Publish the APK to GitHub Releases
+After the normal Actions artifact has been uploaded and the release asset has been prepared,
+add a step named:
+Publish APK to GitHub Releases
+Use the GitHub CLI command:
+gh release create
+Do not use an unverified third-party GitHub Release action.
+Authenticate GitHub CLI using:
+GH_TOKEN: ${{ github.token }}
+
+Before attempting release creation:
+● Run gh --version.
+● Confirm that GitHub CLI is available.
+● Confirm that the prepared release asset exists.
+● Confirm that the release asset is a non-empty .apk file.
+● Do not attempt release creation if APK validation fails.
+Unique release tag
+Create a unique tag for every workflow execution using both:
+● GITHUB_RUN_NUMBER
+● GITHUB_RUN_ATTEMPT
+Use this tag format:
+debug-apk-build-GITHUB_RUN_NUMBER-GITHUB_RUN_ATTEMPT
+For example:
+debug-apk-build-12-1
+Construct the tag dynamically at workflow runtime.
+Do not use a fixed tag such as:
+● latest
+● debug
+● build
+● v1
+● apk
+Do not overwrite, move, delete, or reuse an existing release tag.
+The unique tag must prevent a release conflict when:
+● A new commit is pushed.
+● The workflow is run manually.
+● A failed workflow is rerun.
+● The same workflow run is attempted again.
+Release contents
+Create a published GitHub Release with:
+
+Release title:
+Debug APK Build #GITHUB_RUN_NUMBER
+Release tag:
+debug-apk-build-GITHUB_RUN_NUMBER-GITHUB_RUN_ATTEMPT
+Target commit:
+GITHUB_SHA
+Release notes that clearly state:
+● This is an automatically generated debug APK.
+● The APK was built by GitHub Actions.
+● The GitHub Actions run number.
+● The GitHub Actions run attempt.
+● The source commit SHA.
+● The APK is intended for testing.
+● The APK is not a Play Store production release.
+● The APK is signed only with a temporary debug keystore.
+Attach only the prepared .apk file as the manually uploaded release asset.
+Do not manually attach:
+● A ZIP file
+● A source-code archive
+● A tar.gz file
+● The debug keystore
+● Credentials
+● Configuration files
+● Gradle files
+● Build caches
+● Logs
+● Secrets
+● Any APK other than the verified app debug APK
+GitHub may automatically display its standard Source code (zip) and Source code (tar.gz) links
+for the release. Do not attempt to create, upload, replace, remove, or modify those
+platform-generated links.
+Mark the newly created release explicitly as the latest release using:
+--latest
+
+Do not create the release as:
+● A draft
+● A prerelease
+● An immutable release requiring later manual publication
+The APK must be visible directly under the release Assets section after successful publishing.
+Release failure protection
+The GitHub Actions artifact must be uploaded before release publishing begins.
+Configure the release publishing step so that:
+● A release error does not remove or hide the successfully uploaded Actions artifact.
+● A release error does not cause the APK build result to be lost.
+● A release error is shown clearly as a warning.
+● The workflow summary clearly reports that the APK build and artifact upload succeeded
+even when release publishing fails.
+● The workflow does not falsely report that release publishing succeeded.
+● The release step uses continue-on-error: true.
+● No unrelated fallback release action is attempted.
+● No duplicate release is created as a fallback.
+Assign an id to the release step so its outcome can be checked later.
+Verify the release result
+After the release attempt, add a step named:
+Report APK download result
+This step must always run after the release attempt.
+If release publishing succeeded:
+● Confirm the release using gh release view.
+● Print the release tag.
+● Print the release title.
+● Print the direct GitHub Release page URL.
+● Print the exact APK asset filename.
+● Add the release page URL to GITHUB_STEP_SUMMARY.
+● Add a message explaining that the APK can be downloaded from the release Assets
+section.
+● State that the normal Actions artifact is also available as a backup.
+
+If release publishing failed:
+● Print a clear warning.
+● State that the APK build succeeded.
+● State that the Actions artifact named app-debug-apk remains available.
+● Add the same warning and backup instructions to GITHUB_STEP_SUMMARY.
+● Do not falsely print a release URL.
+● Do not fail the completed APK build solely because release publishing failed.
+Authenticate any gh command in this reporting step using:
+GH_TOKEN: ${{ github.token }}
+Security restrictions
+Do not create fake:
+● google-services.json files
+● Firebase files
+● API keys
+● Credentials
+● Personal access tokens
+● Release-signing files
+● Production keystores
+● Missing secrets
+● Placeholder secrets
+Do not expose:
+● GITHUB_TOKEN
+● GH_TOKEN
+● Environment credentials
+● Repository secrets
+● Keystore contents
+Do not echo authentication tokens into workflow logs.
+Do not persist credentials beyond the temporary GitHub Actions runner.
+Do not modify repository settings.
+Do not enable GitHub Pages.
+Do not create a website.
+Do not create a second workflow.
+
+Do not create a release manually while preparing the repository.
+The release must be created only when the generated workflow runs after I manually commit
+and push the workflow file.
+Final validation before finishing
+Before finishing, confirm all of the following:
+● Only .github/workflows/build-apk.yml was created.
+● No existing file was modified.
+● AGP 9.1.1 was confirmed from gradle/libs.versions.toml.
+● Java 17 is configured before Gradle.
+● The active Java version is verified.
+● Gradle 9.3.1 is used exactly.
+● The repository Gradle wrapper is not used.
+● The temporary debug keystore is created before the build.
+● The temporary debug keystore is never uploaded.
+● The build command is exactly gradle :app:assembleDebug --stacktrace --no-daemon.
+● The APK path is exactly app/build/outputs/apk/debug/app-debug.apk.
+● The Actions artifact name is exactly app-debug-apk.
+● actions/upload-artifact is configured to fail when the APK is missing.
+● The Actions artifact is uploaded before release publishing.
+● The release asset is an actual .apk file and not a ZIP.
+● Every workflow execution receives a unique release tag.
+● GITHUB_RUN_NUMBER and GITHUB_RUN_ATTEMPT are both used in the tag.
+● The release targets GITHUB_SHA.
+● The release is explicitly marked as latest.
+● The built-in GitHub token is used.
+● The workflow has contents: write permission.
+● No personal access token or repository secret is required.
+● Release failure does not remove the Actions artifact.
+● The workflow summary reports whether release publishing succeeded or failed.
+● No Android application or project file was modified.
+● No file other than .github/workflows/build-apk.yml was created.
+Give me a short workflow summary that includes:
+● The confirmed AGP version.
+● The Java version requirement.
+● The exact Gradle version.
+● The exact build command.
+● The APK path.
+● The Actions artifact name.
+
+● The release tag format.
+● The release asset filename format.
+● Confirmation that the latest successful release will contain a directly downloadable APK.
+● Confirmation that release failure will leave the Actions artifact available.
+Do not publish, commit, sync, push, tag, or create a GitHub Release now.
+Wait for me to manually commit and push the workflow file to GitHub.
+Prompt End
+—--------------
+
+Gemini 3.7 FlashRan for 46s
+
+summarize_autoAction historychevron_right
+
+Here are key actions taken for the app:
+
+editEdited 1 file
+
+.github/workflows/build-apk.yml
+
+check_circle
+
+GitHub Actions Workflow Configuration Summary
+
+The GitHub Actions workflow has been created at .github/workflows/build-apk.yml without modifying any application code, assets, or Gradle project settings.
+
+Confirmed AGP Version: 9.1.1 (verified in gradle/libs.versions.toml)
+
+Java Version Requirement: Java 17 (Eclipse Temurin JDK 17 with runtime verification)
+
+Exact Gradle Version: Gradle 9.3.1 (configured via gradle/actions/setup-gradle@v4)
+
+Exact Build Command: gradle :app:assembleDebug --stacktrace --no-daemon
+
+Debug APK Path: app/build/outputs/apk/debug/app-debug.apk
+
+Actions Artifact Name: app-debug-apk
+
+Release Tag Format: debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}
+
+Release Asset Filename Format: <repository-name>-debug-build-<run-number>.apk
+
+Direct Phone Download: The latest successful release will contain the standalone .apk file directly in the release Assets section for direct mobile download.
+
+Artifact Preservation Guarantee: If GitHub Release creation encounters any permissions or environment issue, the normal GitHub Actions artifact (app-debug-apk) remains safely preserved and downloadable from the workflow run summary.
+
+flagCheckpoint
+
+Please regenerate or restore the missing Gradle wrapper files in my project to fix the 'GradleWrapperMain' error so the build can succeed.
+
+Gemini 3.7 FlashRan for 65s
+
+summarize_autoAction historychevron_right
+
+point_scanExplored codebase
+
+Scanned gradle and found 2 files: libs.versions.toml and wrapper.
+
+point_scanExplored codebase
+
+Scanned gradle/wrapper and found 1 file: gradle-wrapper.properties.
+
+descriptionRead file
+
+Read 1 file: gradle/wrapper/gradle-wrapper.properties
+
+terminalRan command
+
+gradle wrapper --gradle-version 9.3.1
+
+Calculating task graph as no cached configuration is available for tasks: wrapper --gradle-version 9.3.1> Task :wrapperBUILD SUCCESSFUL in 6s1 actionable task: 1 executedConfiguration cache entry stored.
+
+extension5 seconds
+
+> Check gradle wrapper generation task **Status**: Cancelled (early-termination condition met by a message from 292d4236-77f4-4905-8127-16ad95a41043/task-202)
+
+extensionRun gradle wrapper
+
+add_commentResponded
+
+point_scanExplored codebase
+
+Scanned gradle/wrapper and found 2 files: gradle-wrapper.jar and gradle-wrapper.properties.
+
+point_scanExplored codebase
+
+Scanned root directory and found 14 files: .build-outputs, .env.example, .github, .gitignore, app, assets, build.gradle.kts, debug.keystore.base64, gradle, gradle.properties, gradlew, gradlew.bat, metadata.json and settings.gradle.kts.
+
+terminalRan command
+
+./gradlew -v
+
+------------------------------------------------------------Gradle 9.3.1------------------------------------------------------------Build time: 2026-01-29 14:15:01 UTCRevision: 44f4e8d3122ee6e7cbf5a248d7e20b4ca666bda3Kotlin: 2.2.21Groovy: 4.0.29Ant: Apache Ant(TM) version 1.10.15 compiled on August 25 2024Launcher JVM: 21.0.12 (Eclipse Adoptium 21.0.12+8-LTS)Daemon JVM: /usr/lib/jvm/temurin-21-jdk-amd64 (no Daemon JVM specified, using current Java home)OS: Linux 4.19.0-gvisor amd64
+
+buildBuilt
+
+The Gradle wrapper files have been regenerated and verified:
+
+Restored Files
+
+gradle/wrapper/gradle-wrapper.jar: Restored the standard wrapper execution binary.
+
+gradle/wrapper/gradle-wrapper.properties: Configured for Gradle 9.3.1.
+
+gradlew & gradlew.bat: Restored the Linux/macOS and Windows wrapper scripts.
+
+Verification
+
+Ran ./gradlew -v — Gradle 9.3.1 initialized and executed without errors.
+
+Verified compilation with compile_applet — build succeeded cleanly.
+
+flagCheckpoint
+
+flagRestored from
+
+2026-08-22T07:35:08.915863Z
+
+My app's 'Start Live Broadcast' button should open the device camera and integrate an RTMP stream key to start broadcasting live.
+
+Gemini 3.7 FlashRan for 505s
+
+summarize_autoAction historychevron_right
+
+Here are key actions taken for the app:
+
+buildBuilt
+
+Your application has been restored to its working state with all existing screens, features, images, and configurations intact.
+
+Diagnosis & Corrections Made:
+
+Restored gradle.properties: Reinstated the Android Gradle compiler and JVM environment settings (which were accidentally replaced with a YAML workflow file).
+
+Cleaned Workspace Configuration: Restored /assets/.aistudio/.gitignore, cleaned up misplaced workflow files at the root level, and formatted the gradlew script so that GitHub Actions and local builds work properly.
+
+Verified Application & Assets: Confirmed that all existing screens (Home, AI Voice Teacher, Live Class Room, Videos, Notes, Tests, Faculty, Settings, Downloads), layouts, drawables, Room database, and Gemini service integrations remain unchanged.
+
+Generated Signed APK Artifacts:
+
+Signed Release APK: app/build/outputs/apk/release/app-release.apk (~23 MB)
+
+Signed Debug APK: app/build/outputs/apk/debug/app-debug.apk (~30 MB)
+
+Both APKs are available directly in your project's app/build/outputs/apk/ directory.
+
+flagCheckpoint
+
+Google AI Studio Prompt to Build and Publish the Debug APK
+Prompt Start Here:
+—----------------------
+Prepare this completed Google AI Studio Android app for automatic debug APK building and
+GitHub Release publishing with GitHub Actions.
+Before creating anything, confirm that:
+gradle/libs.versions.toml
+contains exactly:
+agp = "9.1.1"
+If the AGP version is not exactly 9.1.1:
+● Stop immediately.
+● Report the detected AGP value.
+● Do not create the workflow.
+● Do not modify any file.
+If the AGP version is exactly 9.1.1, create only:
+.github/workflows/build-apk.yml
+Do not create, edit, delete, rename, format, upgrade, or replace any other repository file.
+
+Do not modify the Android app, source code, design, features, package name, application ID,
+manifest, resources, dependencies, Gradle project files, signing configuration, or project
+settings.
+The workflow must build the debug APK, preserve it as a normal GitHub Actions artifact, and
+publish the same APK directly under GitHub Releases for easy downloading on a phone.
+Workflow triggers
+Create a GitHub Actions workflow that:
+● Runs automatically on every push to the main branch.
+● Also supports workflow_dispatch.
+● Does not run on pull requests.
+● Uses ubuntu-latest.
+● Checks out the complete repository.
+● Runs all Gradle commands from the repository root.
+Workflow permissions
+Add only the permission required to create a GitHub Release:
+permissions:
+contents: write
+Do not request unnecessary permissions.
+Do not use a personal access token, repository secret, external API key, deployment key, or
+custom credential.
+Use only the workflow's built-in GitHub token for release creation:
+${{ github.token }}
+Java setup
+Set up Temurin Java 17 using actions/setup-java.
+Java must be configured before Gradle is configured or any Gradle command is executed.
+Add a step named:
+Verify Java environment
+
+That step must:
+● Run java -version.
+● Print JAVA_HOME.
+● Detect the active Java major version.
+● Confirm that the active Java major version is 17 or newer.
+● Fail clearly if Java is lower than 17.
+● Fail clearly if the Java version cannot be detected.
+Gradle setup
+Set up exactly Gradle 9.3.1 using gradle/actions/setup-gradle.
+Do not use:
+● Gradle 8.13
+● The repository Gradle wrapper
+● latest
+● current
+● release-candidate
+● nightly
+● Any Gradle version other than exactly 9.3.1
+Run all Gradle commands from the repository root.
+Temporary debug keystore
+Before building, add a step named:
+Create temporary debug keystore
+That step must:
+● Check whether ./debug.keystore already exists.
+● Generate it only when it is missing.
+● Use keytool from the configured Java 17 installation.
+● Use exactly:
+○ Keystore password: android
+○ Key alias: androiddebugkey
+○ Key password: android
+○ Distinguished name: CN=Android Debug,O=Android,C=US
+○ Algorithm: RSA
+○ Key size: 2048
+○ Validity: 10000 days
+
+● Confirm that ./debug.keystore exists after generation.
+● Fail clearly if the keystore cannot be created.
+● Never commit the keystore.
+● Never cache the keystore.
+● Never print the keystore.
+● Never expose the keystore.
+● Never preserve the keystore after the workflow runner is removed.
+● Never upload the keystore as an artifact or release asset.
+Build the debug APK
+Build the debug APK using exactly:
+gradle :app:assembleDebug --stacktrace --no-daemon
+Do not replace this command with:
+● ./gradlew
+● gradlew
+● assembleRelease
+● bundleRelease
+● assemble
+● build
+● Any other Gradle command
+Verify the APK
+After the build, verify that this exact file exists:
+app/build/outputs/apk/debug/app-debug.apk
+If the exact file is missing:
+● Search only inside app/build/outputs/apk.
+● Print the APK paths discovered inside that directory.
+● Do not search the entire repository.
+● Do not select a release APK.
+● Do not select an Android test APK.
+● Do not select an APK from another module.
+● Do not upload or release an unrelated APK.
+● Fail clearly if the expected debug APK does not exist.
+Confirm that the selected APK:
+
+● Exists.
+● Is a regular file.
+● Is not empty.
+● Has the .apk extension.
+● Is exactly app/build/outputs/apk/debug/app-debug.apk.
+Upload the GitHub Actions artifact
+After APK verification, add a step named:
+Upload debug APK artifact
+Use actions/upload-artifact.
+Upload only:
+app/build/outputs/apk/debug/app-debug.apk
+Name the artifact exactly:
+app-debug-apk
+Configure artifact upload to fail when the APK is missing.
+Do not upload a directory containing unrelated files.
+Do not upload:
+● debug.keystore
+● Credentials
+● Source code
+● Gradle caches
+● Build caches
+● Configuration files
+● Secrets
+● Logs containing sensitive information
+● google-services.json
+● Firebase configuration files
+● Signing files
+The normal GitHub Actions artifact must remain available even after GitHub Release publishing
+is added.
+Prepare the APK release asset
+
+After the Actions artifact has been uploaded successfully, add a step named:
+Prepare APK release asset
+That step must:
+● Create a temporary directory inside the GitHub Actions runner for the release asset.
+● Do not create or commit this directory in the repository.
+● Copy only the verified APK into that temporary directory.
+● Give the copied APK a clear filename based on the repository name and workflow run
+number.
+● Sanitize the repository name before using it in the filename.
+● Use only safe filename characters.
+● Preserve the .apk extension.
+● Do not compress the APK.
+● Do not place the APK inside a ZIP file.
+● Do not rename any file inside the repository.
+● Do not modify the original APK.
+● Export the final release-asset path through GITHUB_OUTPUT for the release step.
+Use a release filename in this general format:
+repository-name-debug-build-run-number.apk
+For example:
+my-android-app-debug-build-12.apk
+Do not hard-code a specific app name or repository name.
+Publish the APK to GitHub Releases
+After the normal Actions artifact has been uploaded and the release asset has been prepared,
+add a step named:
+Publish APK to GitHub Releases
+Use the GitHub CLI command:
+gh release create
+Do not use an unverified third-party GitHub Release action.
+Authenticate GitHub CLI using:
+GH_TOKEN: ${{ github.token }}
+
+Before attempting release creation:
+● Run gh --version.
+● Confirm that GitHub CLI is available.
+● Confirm that the prepared release asset exists.
+● Confirm that the release asset is a non-empty .apk file.
+● Do not attempt release creation if APK validation fails.
+Unique release tag
+Create a unique tag for every workflow execution using both:
+● GITHUB_RUN_NUMBER
+● GITHUB_RUN_ATTEMPT
+Use this tag format:
+debug-apk-build-GITHUB_RUN_NUMBER-GITHUB_RUN_ATTEMPT
+For example:
+debug-apk-build-12-1
+Construct the tag dynamically at workflow runtime.
+Do not use a fixed tag such as:
+● latest
+● debug
+● build
+● v1
+● apk
+Do not overwrite, move, delete, or reuse an existing release tag.
+The unique tag must prevent a release conflict when:
+● A new commit is pushed.
+● The workflow is run manually.
+● A failed workflow is rerun.
+● The same workflow run is attempted again.
+Release contents
+Create a published GitHub Release with:
+
+Release title:
+Debug APK Build #GITHUB_RUN_NUMBER
+Release tag:
+debug-apk-build-GITHUB_RUN_NUMBER-GITHUB_RUN_ATTEMPT
+Target commit:
+GITHUB_SHA
+Release notes that clearly state:
+● This is an automatically generated debug APK.
+● The APK was built by GitHub Actions.
+● The GitHub Actions run number.
+● The GitHub Actions run attempt.
+● The source commit SHA.
+● The APK is intended for testing.
+● The APK is not a Play Store production release.
+● The APK is signed only with a temporary debug keystore.
+Attach only the prepared .apk file as the manually uploaded release asset.
+Do not manually attach:
+● A ZIP file
+● A source-code archive
+● A tar.gz file
+● The debug keystore
+● Credentials
+● Configuration files
+● Gradle files
+● Build caches
+● Logs
+● Secrets
+● Any APK other than the verified app debug APK
+GitHub may automatically display its standard Source code (zip) and Source code (tar.gz) links
+for the release. Do not attempt to create, upload, replace, remove, or modify those
+platform-generated links.
+Mark the newly created release explicitly as the latest release using:
+--latest
+
+Do not create the release as:
+● A draft
+● A prerelease
+● An immutable release requiring later manual publication
+The APK must be visible directly under the release Assets section after successful publishing.
+Release failure protection
+The GitHub Actions artifact must be uploaded before release publishing begins.
+Configure the release publishing step so that:
+● A release error does not remove or hide the successfully uploaded Actions artifact.
+● A release error does not cause the APK build result to be lost.
+● A release error is shown clearly as a warning.
+● The workflow summary clearly reports that the APK build and artifact upload succeeded
+even when release publishing fails.
+● The workflow does not falsely report that release publishing succeeded.
+● The release step uses continue-on-error: true.
+● No unrelated fallback release action is attempted.
+● No duplicate release is created as a fallback.
+Assign an id to the release step so its outcome can be checked later.
+Verify the release result
+After the release attempt, add a step named:
+Report APK download result
+This step must always run after the release attempt.
+If release publishing succeeded:
+● Confirm the release using gh release view.
+● Print the release tag.
+● Print the release title.
+● Print the direct GitHub Release page URL.
+● Print the exact APK asset filename.
+● Add the release page URL to GITHUB_STEP_SUMMARY.
+● Add a message explaining that the APK can be downloaded from the release Assets
+section.
+● State that the normal Actions artifact is also available as a backup.
+
+If release publishing failed:
+● Print a clear warning.
+● State that the APK build succeeded.
+● State that the Actions artifact named app-debug-apk remains available.
+● Add the same warning and backup instructions to GITHUB_STEP_SUMMARY.
+● Do not falsely print a release URL.
+● Do not fail the completed APK build solely because release publishing failed.
+Authenticate any gh command in this reporting step using:
+GH_TOKEN: ${{ github.token }}
+Security restrictions
+Do not create fake:
+● google-services.json files
+● Firebase files
+● API keys
+● Credentials
+● Personal access tokens
+● Release-signing files
+● Production keystores
+● Missing secrets
+● Placeholder secrets
+Do not expose:
+● GITHUB_TOKEN
+● GH_TOKEN
+● Environment credentials
+● Repository secrets
+● Keystore contents
+Do not echo authentication tokens into workflow logs.
+Do not persist credentials beyond the temporary GitHub Actions runner.
+Do not modify repository settings.
+Do not enable GitHub Pages.
+Do not create a website.
+Do not create a second workflow.
+
+Do not create a release manually while preparing the repository.
+The release must be created only when the generated workflow runs after I manually commit
+and push the workflow file.
+Final validation before finishing
+Before finishing, confirm all of the following:
+● Only .github/workflows/build-apk.yml was created.
+● No existing file was modified.
+● AGP 9.1.1 was confirmed from gradle/libs.versions.toml.
+● Java 17 is configured before Gradle.
+● The active Java version is verified.
+● Gradle 9.3.1 is used exactly.
+● The repository Gradle wrapper is not used.
+● The temporary debug keystore is created before the build.
+● The temporary debug keystore is never uploaded.
+● The build command is exactly gradle :app:assembleDebug --stacktrace --no-daemon.
+● The APK path is exactly app/build/outputs/apk/debug/app-debug.apk.
+● The Actions artifact name is exactly app-debug-apk.
+● actions/upload-artifact is configured to fail when the APK is missing.
+● The Actions artifact is uploaded before release publishing.
+● The release asset is an actual .apk file and not a ZIP.
+● Every workflow execution receives a unique release tag.
+● GITHUB_RUN_NUMBER and GITHUB_RUN_ATTEMPT are both used in the tag.
+● The release targets GITHUB_SHA.
+● The release is explicitly marked as latest.
+● The built-in GitHub token is used.
+● The workflow has contents: write permission.
+● No personal access token or repository secret is required.
+● Release failure does not remove the Actions artifact.
+● The workflow summary reports whether release publishing succeeded or failed.
+● No Android application or project file was modified.
+● No file other than .github/workflows/build-apk.yml was created.
+Give me a short workflow summary that includes:
+● The confirmed AGP version.
+● The Java version requirement.
+● The exact Gradle version.
+● The exact build command.
+● The APK path.
+● The Actions artifact name.
+
+● The release tag format.
+● The release asset filename format.
+● Confirmation that the latest successful release will contain a directly downloadable APK.
+● Confirmation that release failure will leave the Actions artifact available.
+Do not publish, commit, sync, push, tag, or create a GitHub Release now.
+Wait for me to manually commit and push the workflow file to GitHub.
+Prompt End
+—--------------
+
+summarize_autoAction historychevron_right
+
+Here are key actions taken for the app:
+
+editEdited 1 file
+
+.github/workflows/build-apk.yml
+
+check_circle
+
+GitHub Actions Workflow Configuration Summary
+
+The GitHub Actions workflow has been created at .github/workflows/build-apk.yml without modifying any application code, assets, or Gradle project settings.
+
+Confirmed AGP Version: 9.1.1 (verified in gradle/libs.versions.toml)
+
+Java Version Requirement: Java 17 (Eclipse Temurin JDK 17 with runtime verification)
+
+Exact Gradle Version: Gradle 9.3.1 (configured via gradle/actions/setup-gradle@v4)
+
+Exact Build Command: gradle :app:assembleDebug --stacktrace --no-daemon
+
+Debug APK Path: app/build/outputs/apk/debug/app-debug.apk
+
+Actions Artifact Name: app-debug-apk
+
+Release Tag Format: debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}
+
+Release Asset Filename Format: <repository-name>-debug-build-<run-number>.apk
+
+Direct Phone Download: The latest successful release will contain the standalone .apk file directly in the release Assets section for direct mobile download.
+
+Artifact Preservation Guarantee: If GitHub Release creation encounters any permissions or environment issue, the normal GitHub Actions artifact (app-debug-apk) remains safely preserved and downloadable from the workflow run summary.
+
+flagCheckpoint
+
+Please regenerate or restore the missing Gradle wrapper files in my project to fix the 'GradleWrapperMain' error so the build can succeed.
+
+summarize_autoAction historychevron_right
+
+Here are key actions taken for the app:
+
+buildBuilt
+
+The Gradle wrapper files have been regenerated and verified:
+
+Restored Files
+
+gradle/wrapper/gradle-wrapper.jar: Restored the standard wrapper execution binary.
+
+gradle/wrapper/gradle-wrapper.properties: Configured for Gradle 9.3.1.
+
+gradlew & gradlew.bat: Restored the Linux/macOS and Windows wrapper scripts.
+
+Verification
+
+Ran ./gradlew -v — Gradle 9.3.1 initialized and executed without errors.
+
+Verified compilation with compile_applet — build succeeded cleanly.
+
+flagCheckpoint
+
+flagRestored from
+
+2026-08-22T07:35:08.915863Z
+
+My app's 'Start Live Broadcast' button should open the device camera and integrate an RTMP stream key to start broadcasting live.
+
+summarize_autoAction historychevron_right
+
+Here are key actions taken for the app:
+
+editEdited 7 files
+
+app/build.gradle.kts
+
+check_circle
+
+app/src/main/AndroidManifest.xml
+
+check_circle
+
+app/src/main/java/com/example/util/RtmpBroadcastManager.kt
+
+check_circle
+
+app/src/main/java/com/example/ui/screens/LiveBroadcastStudioScreen.kt
+
+check_circle
+
+app/src/main/java/com/example/ui/AiTeacherViewModel.kt
+
+check_circle
+
+app/src/main/java/com/example/ui/screens/CreateScreen.kt
+
+check_circle
+
+app/src/main/java/com/example/MainActivity.kt
+
+check_circle
+
+buildBuilt
+
+I have implemented the Live Broadcast Studio feature with device camera integration and RTMP stream key support:
+
+Key Additions & Features
+
+Device Camera Integration (CameraX):
+
+Integrated Android CameraX lifecycle bindings (PreviewView, CameraSelector, TorchControl) for front/rear camera switching and flashlight controls during live broadcasts.
+
+Added dynamic runtime camera and audio permission handlers with graceful fallbacks.
+
+RTMP Stream Key & Server Ingestion:
+
+Platform Ingestion Presets: Pre-configured server endpoints for Mithila Academy Live Server, YouTube Live (rtmp://a.rtmp.youtube.com/live2), Facebook Live, Twitch, and Custom RTMP destinations.
+
+Stream Key Management: Includes secure masked input with visibility toggle, one-tap stream key generation, clipboard copy/paste, and custom stream key binding.
+
+Encoding & Quality Profiles: Configurable resolution and bitrate options (1080p FHD @ 60fps / 4500kbps, 720p HD @ 30fps / 2500kbps, 480p SD @ 30fps / 1200kbps).
+
+Live Broadcast Studio Interface:
+
+Full-Screen Live Camera Viewfinder: Immersive edge-to-edge camera feed with broadcast status indicators and pulsing LIVE badges.
+
+Live Broadcast Telemetry HUD: Real-time monitoring of live bitrate, frame rate (FPS), latency / ping, stream uptime, viewer count, and dropped frame percentages.
+
+Interactive Teacher Controls: Quick actions to switch lenses, toggle torchlight, mute/unmute microphone, and send teacher announcements.
+
+Live Student Chat Stream: Floating, semi-transparent real-time chat overlay allowing teachers to monitor student questions and interact during the live broadcast.
+
+flagCheckpoint
+
+Provide a complete Android Studio code snippet and architecture design for an app that allows users to upload videos to Firebase Storage and stream live video using CameraX and an embedded media streaming server.
+
+Gemini 3.7 FlashRan for 12s
+
+lightbulbThought for 12 seconds
+
+Here is a complete, production-ready architecture design and Kotlin/Jetpack Compose implementation for an Android application that supports both Firebase Storage video uploading and live video streaming using CameraX with an embedded media streaming server.
+
+1. Architecture Overview (Clean MVVM)
+
+codeCode
+
+┌────────────────────────────────────────────────────────┐ │ Jetpack Compose UI Layer │ │ (LiveStreamScreen, VideoUploadScreen, PreviewView) │ └──────────────────────────┬─────────────────────────────┘ │ StateFlow / Actions ┌──────────────────────────▼─────────────────────────────┐ │ ViewModel │ │ (StreamViewModel, VideoUploadViewModel) │ └────────────┬─────────────────────────────┬─────────────┘ │ │ ┌────────────▼──────────────┐ ┌────────────▼─────────────┐ │ Firebase Storage Module │ │ Live Streaming Pipeline │ │ - Chunked Upload │ │ - CameraX VideoCapture │ │ - Upload Progress Flow │ │ - Embedded Stream Server │ │ - Download URL Extraction │ │ (Ktor / MJPEG / HLS) │ └───────────────────────────┘ └──────────────────────────┘
+
+2. Gradle Dependencies (build.gradle.kts)
+
+codeKotlin
+
+plugins { alias(libs.plugins.android.application) alias(libs.plugins.kotlin.android) alias(libs.plugins.google.gms.google.services) // For Firebase } dependencies { // Jetpack Compose implementation(platform(libs.androidx.compose.bom)) implementation(libs.androidx.compose.ui) implementation(libs.androidx.compose.material3) implementation(libs.androidx.activity.compose) // CameraX val cameraxVersion = "1.4.1" implementation("androidx.camera:camera-core:$cameraxVersion") implementation("androidx.camera:camera-camera2:$cameraxVersion") implementation("androidx.camera:camera-lifecycle:$cameraxVersion") implementation("androidx.camera:camera-view:$cameraxVersion") implementation("androidx.camera:camera-video:$cameraxVersion") // Firebase Storage implementation(platform("com.google.firebase:firebase-bom:33.7.0")) implementation("com.google.firebase:firebase-storage-ktx") // Embedded Media Streaming Server (Ktor CIO Engine) val ktorVersion = "2.3.12" implementation("io.ktor:ktor-server-core:$ktorVersion") implementation("io.ktor:ktor-server-cio:$ktorVersion") implementation("io.ktor:ktor-server-cors:$ktorVersion") }
+
+3. Permissions & Service Manifest (AndroidManifest.xml)
+
+codeXml
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"> <uses-permission android:name="android.permission.INTERNET" /> <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <uses-permission android:name="android.permission.CAMERA" /> <uses-permission android:name="android.permission.RECORD_AUDIO" /> <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" /> <uses-feature android:name="android.hardware.camera" android:required="true" /> <application android:allowBackup="true" android:theme="@style/Theme.Material3.DayNight.NoActionBar"> <activity android:name=".MainActivity" android:exported="true"> <intent-filter> <action android:name="android.intent.action.MAIN" /> <category android:name="android.intent.category.LAUNCHER" /> </intent-filter> </activity> </application> </manifest>
+
+4. Firebase Storage Upload Repository
+
+This repository exposes an asynchronous Kotlin Flow to track byte transfers and download URLs in real time:
+
+codeKotlin
+
+package com.example.streaming.data import android.net.Uri import com.google.firebase.storage.FirebaseStorage import kotlinx.coroutines.channels.awaitClose import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.callbackFlow import java.util.UUID sealed interface UploadState { data object Idle : UploadState data class Progress(val percentage: Int, val bytesTransferred: Long, val totalBytes: Long) : UploadState data class Success(val downloadUrl: String, val fileName: String) : UploadState data class Error(val message: String) : UploadState } class FirebaseVideoRepository( private val storage: FirebaseStorage = FirebaseStorage.getInstance() ) { fun uploadVideo(fileUri: Uri, folder: String = "videos"): Flow<UploadState> = callbackFlow { val fileName = "${UUID.randomUUID()}.mp4" val storageRef = storage.reference.child("$folder/$fileName") trySend(UploadState.Progress(0, 0, 0)) val uploadTask = storageRef.putFile(fileUri) uploadTask.addOnProgressListener { snapshot -> val totalBytes = snapshot.totalByteCount val transferred = snapshot.bytesTransferred val progress = if (totalBytes > 0) ((transferred * 100) / totalBytes).toInt() else 0 trySend(UploadState.Progress(progress, transferred, totalBytes)) }.addOnSuccessListener { storageRef.downloadUrl.addOnSuccessListener { uri -> trySend(UploadState.Success(uri.toString(), fileName)) close() }.addOnFailureListener { exc -> trySend(UploadState.Error("Failed getting download URL: ${exc.localizedMessage}")) close() } }.addOnFailureListener { exc -> trySend(UploadState.Error("Upload failed: ${exc.localizedMessage}")) close() } awaitClose { uploadTask.cancel() } } }
+
+5. Embedded Media Streaming Server & CameraX Pipeline
+
+This component captures camera frames and runs an embedded Ktor HTTP server that broadcasts a live MJPEG stream over your Wi-Fi/LAN:
+
+codeKotlin
+
+package com.example.streaming.stream import android.content.Context import android.graphics.Bitmap import android.graphics.ImageFormat import android.graphics.Rect import android.graphics.YuvImage import androidx.camera.core.* import androidx.camera.lifecycle.ProcessCameraProvider import androidx.camera.view.PreviewView import androidx.core.content.ContextCompat import androidx.lifecycle.LifecycleOwner import io.ktor.http.* import io.ktor.server.application.* import io.ktor.server.cio.* import io.ktor.server.engine.* import io.ktor.server.response.* import io.ktor.server.routing.* import kotlinx.coroutines.* import kotlinx.coroutines.flow.MutableSharedFlow import java.io.ByteArrayOutputStream import java.net.Inet4Address import java.net.NetworkInterface import java.util.concurrent.Executors class EmbeddedCameraStreamManager(private val context: Context) { private val frameFlow = MutableSharedFlow<ByteArray>(extraBufferCapacity = 1) private var serverEngine: ApplicationEngine? = null private val serverPort = 8080 private var isStreaming = false /** * Binds CameraX with ImageAnalysis for frame extraction */ fun startCamera( lifecycleOwner: LifecycleOwner, previewView: PreviewView, onReady: (String) -> Unit ) { val cameraProviderFuture = ProcessCameraProvider.getInstance(context) val executor = Executors.newSingleThreadExecutor() cameraProviderFuture.addListener({ val cameraProvider = cameraProviderFuture.get() val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider } val imageAnalysis = ImageAnalysis.Builder() .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888) .build() imageAnalysis.setAnalyzer(executor) { imageProxy -> if (isStreaming) { val jpegBytes = imageProxyToJpeg(imageProxy) jpegBytes?.let { frameFlow.tryEmit(it) } } imageProxy.close() } cameraProvider.unbindAll() cameraProvider.bindToLifecycle( lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis ) startEmbeddedServer() val streamUrl = "http://${getLocalIpAddress()}:$serverPort/live" onReady(streamUrl) }, ContextCompat.getMainExecutor(context)) } /** * Starts the embedded Ktor HTTP server serving the live video feed */ private fun startEmbeddedServer() { if (serverEngine != null) return isStreaming = true serverEngine = embeddedServer(CIO, port = serverPort) { routing { get("/live") { call.response.header("Cache-Control", "no-cache, no-store, must-revalidate") call.respondOutputStream( contentType = ContentType.parse("multipart/x-mixed-replace; boundary=--frame") ) { try { frameFlow.collect { jpeg -> write("--frame\r\n".toByteArray()) write("Content-Type: image/jpeg\r\n".toByteArray()) write("Content-Length: ${jpeg.size}\r\n\r\n".toByteArray()) write(jpeg) write("\r\n".toByteArray()) flush() } } catch (e: Exception) { // Client disconnected } } } } }.start(wait = false) } fun stop() { isStreaming = false serverEngine?.stop(1000, 2000) serverEngine = null } private fun imageProxyToJpeg(image: ImageProxy): ByteArray? { val planes = image.planes val yBuffer = planes[0].buffer val uBuffer = planes[1].buffer val vBuffer = planes[2].buffer val ySize = yBuffer.remaining() val uSize = uBuffer.remaining() val vSize = vBuffer.remaining() val nv21 = ByteArray(ySize + uSize + vSize) yBuffer.get(nv21, 0, ySize) vBuffer.get(nv21, ySize, vSize) uBuffer.get(nv21, ySize + vSize, uSize) val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null) val out = ByteArrayOutputStream() yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 75, out) return out.toByteArray() } private fun getLocalIpAddress(): String { NetworkInterface.getNetworkInterfaces().toList().forEach { nInterface -> nInterface.inetAddresses.toList().forEach { address -> if (!address.isLoopbackAddress && address is Inet4Address) { return address.hostAddress ?: "127.0.0.1" } } } return "127.0.0.1" } }
+
+6. Jetpack Compose Screen (LiveAndUploadScreen.kt)
+
+codeKotlin
+
+package com.example.streaming.ui import android.net.Uri import androidx.activity.compose.rememberLauncherForActivityResult import androidx.activity.result.contract.ActivityResultContracts import androidx.camera.view.PreviewView import androidx.compose.foundation.background import androidx.compose.foundation.layout.* import androidx.compose.foundation.shape.RoundedCornerShape import androidx.compose.material.icons.Icons import androidx.compose.material.icons.filled.CloudUpload import androidx.compose.material.icons.filled.Videocam import androidx.compose.material3.* import androidx.compose.runtime.* import androidx.compose.ui.Alignment import androidx.compose.ui.Modifier import androidx.compose.ui.graphics.Color import androidx.compose.ui.platform.LocalContext import androidx.compose.ui.platform.LocalLifecycleOwner import androidx.compose.ui.unit.dp import androidx.compose.ui.viewinterop.AndroidView import com.example.streaming.data.FirebaseVideoRepository import com.example.streaming.data.UploadState import com.example.streaming.stream.EmbeddedCameraStreamManager import kotlinx.coroutines.launch @Composable fun LiveAndUploadScreen( streamManager: EmbeddedCameraStreamManager, repository: FirebaseVideoRepository = remember { FirebaseVideoRepository() } ) { val context = LocalContext.current val lifecycleOwner = LocalLifecycleOwner.current val scope = rememberCoroutineScope() var streamUrl by remember { mutableStateOf<String?>(null) } var uploadState by remember { mutableStateOf<UploadState>(UploadState.Idle) } val videoPickerLauncher = rememberLauncherForActivityResult( contract = ActivityResultContracts.GetContent() ) { uri: Uri? -> uri?.let { scope.launch { repository.uploadVideo(it).collect { state -> uploadState = state } } } } Scaffold { padding -> Column( modifier = Modifier .fillMaxSize() .padding(padding) ) { // Camera Stream Viewfinder Box( modifier = Modifier .fillMaxWidth() .weight(1f) .background(Color.Black) ) { AndroidView( factory = { ctx -> PreviewView(ctx).apply { streamManager.startCamera(lifecycleOwner, this) { url -> streamUrl = url } } }, modifier = Modifier.fillMaxSize() ) // Stream URL Indicator streamUrl?.let { url -> Surface( color = Color.Black.copy(alpha = 0.75f), shape = RoundedCornerShape(8.dp), modifier = Modifier .align(Alignment.TopCenter) .padding(16.dp) ) { Row( modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically ) { Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.Red) Spacer(Modifier.width(8.dp)) Text("Live Server: $url", color = Color.White, style = MaterialTheme.typography.bodySmall) } } } } // Firebase Storage Upload Section Card( modifier = Modifier .fillMaxWidth() .padding(16.dp), shape = RoundedCornerShape(16.dp) ) { Column( modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp) ) { Text("Firebase Video Uploader", style = MaterialTheme.typography.titleMedium) Button( onClick = { videoPickerLauncher.launch("video/*") }, modifier = Modifier.fillMaxWidth() ) { Icon(Icons.Default.CloudUpload, contentDescription = null) Spacer(Modifier.width(8.dp)) Text("Select & Upload Video to Firebase") } when (val state = uploadState) { is UploadState.Progress -> { LinearProgressIndicator( progress = { state.percentage / 100f }, modifier = Modifier.fillMaxWidth() ) Text("Uploading: ${state.percentage}% (${state.bytesTransferred / 1024} KB)") } is UploadState.Success -> { Text("Upload Complete!", color = Color(0xFF1B5E20)) Text("URL: ${state.downloadUrl}", style = MaterialTheme.typography.bodySmall) } is UploadState.Error -> { Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error) } UploadState.Idle -> {} } } } } } }
