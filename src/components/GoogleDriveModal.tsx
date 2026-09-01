@@ -344,7 +344,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
               {/* Breadcrumb Path Navigation */}
               <div className="flex items-center gap-1 overflow-x-auto py-1 max-w-full text-xs">
                 {folderHistory.map((folder, index) => (
-                  <React.Fragment key={folder.id}>
+                  <React.Fragment key={`${folder.id}-${index}`}>
                     {index > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
                     <button
                       type="button"

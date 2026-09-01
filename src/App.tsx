@@ -14,7 +14,13 @@ import {
   HardDrive,
   Smartphone,
   Palette,
-  Check
+  Check,
+  BookOpen,
+  Globe,
+  ShieldCheck,
+  MessageSquareWarning,
+  RefreshCw,
+  Tv
 } from 'lucide-react';
 import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -32,7 +38,8 @@ import { MicButton } from './components/MicButton';
 import { PythonEmbedRunnerModal } from './components/PythonEmbedRunnerModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { AndroidApkModal } from './components/AndroidApkModal';
-import { PermissionModal } from './components/PermissionModal';
+import { TeacherKnowledgeModal } from './components/TeacherKnowledgeModal';
+import { AcademicVideoCenterModal } from './components/AcademicVideoCenterModal';
 import { CustomizableElement } from './components/CustomizableElement';
 import { CustomizePanel } from './components/CustomizePanel';
 import { renderCustomIcon } from './utils/iconMap';
@@ -54,7 +61,27 @@ export function App() {
   const [showPythonEmbedModal, setShowPythonEmbedModal] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [showAndroidModal, setShowAndroidModal] = useState(false);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
+  // Live GK & Verification Toasts
+  const [liveGkToast, setLiveGkToast] = useState<{
+    query: string;
+    source: string;
+    date?: string;
+    url?: string;
+  } | null>(null);
+  const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+  const [gkRefreshToast, setGkRefreshToast] = useState<string | null>(null);
+
+  // Admin / Teacher Knowledge Authentication Session Token
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('spa_teacher_admin_token');
+    } catch {
+      return null;
+    }
+  });
 
   // Customization Mode State
   const [isEditMode, setIsEditMode] = useState(false);
@@ -97,7 +124,15 @@ export function App() {
     });
 
     session.setOnToolCall((event) => {
-      setToolEvents((prev) => [event, ...prev.slice(0, 3)]);
+      setToolEvents((prev) => {
+        const index = prev.findIndex((e) => e.id === event.id);
+        if (index >= 0) {
+          const next = [...prev];
+          next[index] = event;
+          return next;
+        }
+        return [event, ...prev.filter((e) => e.id !== event.id).slice(0, 3)];
+      });
       // Auto clear completed notifications after 6 seconds
       setTimeout(() => {
         setToolEvents((current) => current.filter((e) => e.id !== event.id));
@@ -109,10 +144,94 @@ export function App() {
       setState('error');
     });
 
+    session.setOnKnowledgeUpdated((data) => {
+      console.log('[App] Received live teacher knowledge update:', data);
+    });
+
+    session.setOnLiveGkGrounding((data) => {
+      console.log('[App] Live GK Grounding event:', data);
+      if (data?.result?.source) {
+        setLiveGkToast({
+          query: data.query,
+          source: data.result.source,
+          date: data.result.verificationDate,
+          url: data.result.sourceUrl,
+        });
+        setTimeout(() => setLiveGkToast(null), 7000);
+      }
+    });
+
+    session.setOnFeedbackLogged((log) => {
+      console.log('[App] Feedback logged event:', log);
+      setFeedbackToast('Student feedback / error report registered for Teacher review.');
+      setTimeout(() => setFeedbackToast(null), 5000);
+    });
+
+    session.setOnGkRefreshCompleted((res) => {
+      console.log('[App] GK Refresh completed event:', res);
+      setGkRefreshToast(`GK Auto-Refreshed: ${res.updatedCount || 0} updated, ${res.newCount || 0} added.`);
+      setTimeout(() => setGkRefreshToast(null), 5000);
+    });
+
+    session.setOnTeacherModeChange((isActive, token, adminName) => {
+      if (isActive && token) {
+        try {
+          sessionStorage.setItem('spa_teacher_admin_token', token);
+        } catch {}
+        setAdminToken(token);
+      } else if (!isActive) {
+        try {
+          sessionStorage.removeItem('spa_teacher_admin_token');
+        } catch {}
+        setAdminToken(null);
+      }
+    });
+
+    if (adminToken) {
+      session.setAdminToken(adminToken);
+    }
+
     return () => {
       session.cleanup();
     };
   }, []);
+
+  // Update liveSession admin token whenever state changes
+  useEffect(() => {
+    if (liveSessionRef.current) {
+      liveSessionRef.current.setAdminToken(adminToken);
+    }
+  }, [adminToken]);
+
+  // Handle Admin Login Success
+  const handleAdminLoginSuccess = (token: string, name: string) => {
+    try {
+      sessionStorage.setItem('spa_teacher_admin_token', token);
+    } catch {}
+    setAdminToken(token);
+    if (liveSessionRef.current) {
+      liveSessionRef.current.setAdminToken(token);
+    }
+  };
+
+  // Handle Admin Logout
+  const handleAdminLogout = async () => {
+    if (adminToken) {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+      } catch {}
+    }
+    try {
+      sessionStorage.removeItem('spa_teacher_admin_token');
+    } catch {}
+    setAdminToken(null);
+    if (liveSessionRef.current) {
+      liveSessionRef.current.setAdminToken(null);
+    }
+  };
 
   // Native Android & Capacitor Mobile Lifecycle Integration
   useEffect(() => {
@@ -126,10 +245,12 @@ export function App() {
       if (isEditMode) {
         setIsEditMode(false);
         setSelectedElementId(null);
+      } else if (showVideoModal) {
+        setShowVideoModal(false);
+      } else if (showKnowledgeModal) {
+        setShowKnowledgeModal(false);
       } else if (showAndroidModal) {
         setShowAndroidModal(false);
-      } else if (showPermissionModal) {
-        setShowPermissionModal(false);
       } else if (showDriveModal) {
         setShowDriveModal(false);
       } else if (showPythonEmbedModal) {
@@ -146,7 +267,7 @@ export function App() {
     return () => {
       backListenerPromise.then((handle) => handle.remove()).catch(() => {});
     };
-  }, [isEditMode, showAndroidModal, showPermissionModal, showDriveModal, showPythonEmbedModal, showInfo]);
+  }, [isEditMode, showVideoModal, showKnowledgeModal, showAndroidModal, showDriveModal, showPythonEmbedModal, showInfo]);
 
   const handleToggleSession = async () => {
     if (isEditMode) return; // In edit mode, clicking elements selects them
@@ -432,6 +553,63 @@ export function App() {
             </button>
           </CustomizableElement>
 
+          {/* Teacher Knowledge & Memory Mode Modal Button */}
+          <CustomizableElement
+            id="knowledge_btn"
+            customization={getCustom('knowledge_btn')}
+            isEditMode={isEditMode}
+            isSelected={selectedElementId === 'knowledge_btn'}
+            onSelect={(id) => setSelectedElementId(id)}
+            onChange={handleUpdateElement}
+          >
+            <button
+              id="btn-open-teacher-knowledge"
+              type="button"
+              onClick={() => !isEditMode && setShowKnowledgeModal(true)}
+              aria-label="Teacher Knowledge & Memory System"
+              className={`px-2.5 py-1.5 rounded-xl border backdrop-blur-xl transition-all shadow-md flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer ${
+                adminToken
+                  ? 'bg-gradient-to-r from-pink-950/80 to-purple-950/80 border-pink-500/60 text-pink-200 shadow-pink-950/40'
+                  : 'bg-slate-950/60 hover:bg-slate-900/80 border-purple-500/30 text-purple-300 hover:text-purple-200'
+              }`}
+            >
+              {getCustom('knowledge_btn').customIcon ? (
+                renderCustomIcon(getCustom('knowledge_btn').customIcon, 'w-3.5 h-3.5')
+              ) : (
+                <BookOpen className="w-3.5 h-3.5 text-pink-400" />
+              )}
+              <span className="hidden sm:inline">Teacher Memory</span>
+              {adminToken && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Teacher Mode Active" />
+              )}
+            </button>
+          </CustomizableElement>
+
+          {/* Academic Videos & Live Hub Button */}
+          <CustomizableElement
+            id="video_hub_btn"
+            customization={getCustom('video_hub_btn')}
+            isEditMode={isEditMode}
+            isSelected={selectedElementId === 'video_hub_btn'}
+            onSelect={(id) => setSelectedElementId(id)}
+            onChange={handleUpdateElement}
+          >
+            <button
+              id="btn-open-academic-videos"
+              type="button"
+              onClick={() => !isEditMode && setShowVideoModal(true)}
+              aria-label="Academic Videos & Live Hub"
+              className="px-2.5 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 backdrop-blur-xl transition-all shadow-md flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+            >
+              {getCustom('video_hub_btn').customIcon ? (
+                renderCustomIcon(getCustom('video_hub_btn').customIcon, 'w-3.5 h-3.5')
+              ) : (
+                <Tv className="w-3.5 h-3.5 text-cyan-400" />
+              )}
+              <span className="hidden sm:inline">Videos & Live</span>
+            </button>
+          </CustomizableElement>
+
           {/* Help & Info Button */}
           <CustomizableElement
             id="info_btn"
@@ -513,6 +691,89 @@ export function App() {
                 className="text-rose-400 hover:text-white p-1 rounded-md cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Live GK Verified Grounding Toast */}
+        <AnimatePresence>
+          {liveGkToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-auto w-full p-2.5 rounded-xl backdrop-blur-xl bg-cyan-950/90 border border-cyan-500/50 shadow-xl shadow-cyan-950/40 flex items-center justify-between gap-2 text-xs text-cyan-200"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+                <div className="truncate">
+                  <p className="font-semibold text-cyan-100 text-[11px] flex items-center gap-1">
+                    <span>Live GK Verified</span>
+                    {liveGkToast.date && <span className="text-[9px] text-cyan-300 font-normal">({liveGkToast.date})</span>}
+                  </p>
+                  <p className="text-[10px] text-cyan-300/80 truncate">
+                    Source: {liveGkToast.source}
+                  </p>
+                </div>
+              </div>
+              {liveGkToast.url && (
+                <a
+                  href={liveGkToast.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-0.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-medium text-[10px] flex items-center gap-0.5 shrink-0 transition-colors"
+                >
+                  Source <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Feedback Registered Toast */}
+        <AnimatePresence>
+          {feedbackToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-auto w-full p-2.5 rounded-xl backdrop-blur-xl bg-amber-950/90 border border-amber-500/50 shadow-xl shadow-amber-950/40 flex items-center justify-between gap-2 text-xs text-amber-200"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquareWarning className="w-4 h-4 text-amber-400 shrink-0" />
+                <p className="text-[11px] leading-tight">{feedbackToast}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFeedbackToast(null)}
+                className="text-amber-400 hover:text-white p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* GK Refresh Toast */}
+        <AnimatePresence>
+          {gkRefreshToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-auto w-full p-2.5 rounded-xl backdrop-blur-xl bg-emerald-950/90 border border-emerald-500/50 shadow-xl shadow-emerald-950/40 flex items-center justify-between gap-2 text-xs text-emerald-200"
+            >
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-emerald-400 shrink-0" />
+                <p className="text-[11px] leading-tight">{gkRefreshToast}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGkRefreshToast(null)}
+                className="text-emerald-400 hover:text-white p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3 h-3" />
               </button>
             </motion.div>
           )}
@@ -769,12 +1030,27 @@ export function App() {
         onClose={() => setShowAndroidModal(false)}
       />
 
-      {/* 10. Microphone Permission Blocked Help Modal */}
-      {showPermissionModal && (
-        <PermissionModal onClose={() => setShowPermissionModal(false)} />
-      )}
+      {/* 10. Teacher Knowledge & Permanent Memory System Modal */}
+      <TeacherKnowledgeModal
+        isOpen={showKnowledgeModal}
+        onClose={() => setShowKnowledgeModal(false)}
+        adminToken={adminToken}
+        onAdminLoginSuccess={handleAdminLoginSuccess}
+        onAdminLogout={handleAdminLogout}
+      />
 
-      {/* 11. Global UI Customize Panel & Inspector Drawer */}
+      {/* 11. Academic Video Hub & Video Streaming Modal */}
+      <AcademicVideoCenterModal
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+        onAskAiTeacher={(topic) => {
+          if (liveSessionRef.current && state === 'disconnected') {
+            liveSessionRef.current.connect();
+          }
+        }}
+      />
+
+      {/* 12. Global UI Customize Panel & Inspector Drawer */}
       <CustomizePanel
         isEditMode={isEditMode}
         selectedElementId={selectedElementId}

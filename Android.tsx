@@ -1,0 +1,32 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    push:
+        branches: [ "main" ]
+
+        jobs:
+          build:
+              runs-on: ubuntu-latest
+
+                  steps:
+                        - name: Checkout source code
+                                uses: actions/checkout@v4
+
+                                      - name: Set up JDK
+                                              uses: actions/setup-java@v4
+                                                      with:
+                                                                distribution: temurin
+                                                                          java-version: '17'
+
+                                                                                - name: Make Gradle executable
+                                                                                        run: chmod +x ./gradlew
+
+                                                                                              - name: Build APK
+                                                                                                      run: ./gradlew assembleDebug
+
+                                                                                                            - name: Upload APK
+                                                                                                                    uses: actions/upload-artifact@v4
+                                                                                                                            with:
+                                                                                                                                      name: app-debug-apk
+                                                                                                                                                path: app/build/outputs/apk/**/*.apk

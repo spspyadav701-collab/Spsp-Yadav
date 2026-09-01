@@ -73,11 +73,6 @@ export const CustomizableElement: React.FC<CustomizableElementProps> = ({
     centerY: 0,
   });
 
-  // If hidden and not in edit mode, don't render
-  if (!customization.visible && !isEditMode) {
-    return null;
-  }
-
   // --- TOUCH & POINTER HANDLERS ---
 
   // 1. Start Touch / Mouse Drag
@@ -329,6 +324,11 @@ export const CustomizableElement: React.FC<CustomizableElementProps> = ({
     touchAction: isEditMode && isSelected ? 'none' : 'auto',
     transition: isDragging || isResizing || isRotating || activeGesture ? 'none' : 'transform 0.12s ease-out, opacity 0.15s ease',
   };
+
+  // If hidden and not in edit mode, don't render (must be after all hooks)
+  if (!customization.visible && !isEditMode) {
+    return null;
+  }
 
   return (
     <div
